@@ -11,3 +11,9 @@ I'm the GitHub Learning Lab bot and I'm here to help guide you in your journey t
 I'll meet you over there, can't wait to get started!
 
 This course is using the :sparkles: open source project [reveal.js](https://github.com/hakimel/reveal.js/). In some cases we’ve made changes to the history so it would behave during class, so head to the original project repo to learn more about the cool people behind this project.
+
+## Fly connectome simulation demo
+
+`fly-brain-sim/` is a self-contained, dependency-free web page that runs a scaled-down spiking model of the complete male *Drosophila* central nervous system announced by Google Research, Janelia, the MRC LMB and Cambridge on 3 September 2026 (166,700 neurons, ~125 million synapses, 11,710 cell types). Neurons are leaky integrate-and-fire units with the parameters of Shiu et al. (Nature, 2024); the wiring is generated to match the connectome's region structure and a few published sensorimotor pathways, and a real edge list exported from neuPrint or FlyWire can be loaded in its place.
+
+Open `fly-brain-sim/index.html` directly in a browser, or run the slideshow (`script/server`) and step to the "Live simulation" slide.

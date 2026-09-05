@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fly Connectome Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #e7e9ec;
+  --panel: #f5f6f7;
+  --panel-2: #eceef1;
+  --ink: #171a1e;
+  --muted: #5b636d;
+  --line: #c7ccd2;
+  --line-soft: #d9dde2;
+  --spike: #f0821c;
+  --spike-glow: rgba(240, 130, 28, 0.55);
+  --olL: #2f7fd6;
+  --olR: #6f5fd8;
+  --cb: #d88f1f;
+  --vnc: #1fa377;
+  --sens: #d4506c;
+  --focus: #2f7fd6;
+  --dot-alpha: 0.42;
+  --shadow: 0 1px 0 rgba(23, 26, 30, 0.06), 0 8px 24px -16px rgba(23, 26, 30, 0.35);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1214;
+    --panel: #171b1f;
+    --panel-2: #1e2428;
+    --ink: #e6e9ec;
+    --muted: #8d97a1;
+    --line: #2b3239;
+    --line-soft: #232a30;
+    --spike: #ffc857;
+    --spike-glow: rgba(255, 200, 87, 0.6);
+    --olL: #5aa0ee;
+    --olR: #9384f0;
+    --cb: #f0ad3f;
+    --vnc: #3ec695;
+    --sens: #ef7590;
+    --focus: #5aa0ee;
+    --dot-alpha: 0.5;
+    --shadow: 0 1px 0 rgba(0, 0, 0, 0.3), 0 10px 30px -18px rgba(0, 0, 0, 0.9);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1214;
+  --panel: #171b1f;
+  --panel-2: #1e2428;
+  --ink: #e6e9ec;
+  --muted: #8d97a1;
+  --line: #2b3239;
+  --line-soft: #232a30;
+  --spike: #ffc857;
+  --spike-glow: rgba(255, 200, 87, 0.6);
+  --olL: #5aa0ee;
+  --olR: #9384f0;
+  --cb: #f0ad3f;
+  --vnc: #3ec695;
+  --sens: #ef7590;
+  --focus: #5aa0ee;
+  --dot-alpha: 0.5;
+  --shadow: 0 1px 0 rgba(0, 0, 0, 0.3), 0 10px 30px -18px rgba(0, 0, 0, 0.9);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+.mono { font-family: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+h1, h2, h3 { font-family: "Bricolage Grotesque", "IBM Plex Sans", Arial, sans-serif; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h1 { font-size: clamp(30px, 4.2vw, 46px); font-weight: 700; line-height: 1.05; }
+h2 { font-size: 20px; font-weight: 700; }
+h3 { font-size: 15px; font-weight: 700; }
+p { margin: 0; }
+a { color: inherit; text-decoration-color: var(--line); text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--ink); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.wrap { max-width: 1280px; margin: 0 auto; padding: 28px 24px 56px; display: flex; flex-direction: column; gap: 22px; }
+
+/* ---- header ---- */
+.masthead { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr); gap: 24px; align-items: end; border-bottom: 1px solid var(--line); padding-bottom: 20px; }
+.masthead .lede { max-width: 62ch; margin-top: 12px; color: var(--muted); font-size: 16px; }
+.eyebrow { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.specimen { font-family: "IBM Plex Mono", monospace; font-size: 12px; line-height: 1.55; border: 1px solid var(--line); background: var(--panel); padding: 12px 14px; display: grid; grid-template-columns: max-content 1fr; column-gap: 14px; row-gap: 2px; }
+.specimen dt { color: var(--muted); }
+.specimen dd { margin: 0; font-variant-numeric: tabular-nums; }
+
+/* ---- main grid ---- */
+.lab { display: grid; grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr); gap: 18px; }
+.panel { background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 12px 16px 10px; border-bottom: 1px solid var(--line-soft); }
+.panel-head .sub { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.map-wrap { position: relative; }
+#map { display: block; width: 100%; height: auto; cursor: crosshair; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 10px 16px 12px; font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--muted); border-top: 1px solid var(--line-soft); }
+.legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: -0.5px; background: var(--c); }
+.legend .spk::before { background: var(--spike); box-shadow: 0 0 6px var(--spike-glow); }
+.tip { position: absolute; pointer-events: none; font-family: "IBM Plex Mono", monospace; font-size: 11.5px; background: var(--ink); color: var(--bg); padding: 5px 8px; max-width: 280px; line-height: 1.4; transform: translate(12px, 12px); display: none; z-index: 2; }
+.tip b { color: inherit; font-weight: 500; }
+
+/* ---- controls ---- */
+.controls { display: flex; flex-direction: column; }
+.ctl-section { padding: 14px 16px; border-bottom: 1px solid var(--line-soft); display: flex; flex-direction: column; gap: 10px; }
+.ctl-section:last-child { border-bottom: 0; }
+.stim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stim { appearance: none; font: inherit; font-size: 13.5px; font-weight: 500; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line); padding: 10px 12px; text-align: left; cursor: pointer; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; transition: background 120ms, border-color 120ms; }
+.stim:hover { border-color: var(--ink); }
+.stim .key { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--muted); border: 1px solid var(--line); padding: 0 5px; line-height: 16px; }
+.stim .to { grid-column: 1 / -1; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--muted); }
+.stim.active { background: var(--spike); border-color: var(--spike); color: #1a1408; }
+.stim.active .key, .stim.active .to { color: #1a1408; border-color: rgba(26, 20, 8, 0.4); }
+.slider { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; font-size: 13px; }
+.slider label { color: var(--ink); }
+.slider output { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; min-width: 8ch; }
+.slider input { grid-column: 1 / -1; width: 100%; accent-color: var(--spike); margin: 0; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { appearance: none; font: inherit; font-size: 13px; font-weight: 500; color: var(--ink); background: transparent; border: 1px solid var(--line); padding: 7px 12px; cursor: pointer; }
+.btn:hover { border-color: var(--ink); }
+.btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.file { font-size: 12.5px; color: var(--muted); }
+.file input { display: none; }
+.file .btn { display: inline-block; }
+.note { font-size: 12.5px; color: var(--muted); }
+.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 14px; font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+.stats div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dotted var(--line); padding-bottom: 3px; }
+.stats span:first-child { color: var(--muted); }
+
+/* ---- raster + charts ---- */
+canvas.plot { display: block; width: 100%; height: auto; }
+.two { display: grid; grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr); gap: 18px; }
+.meters { display: flex; flex-direction: column; }
+.meter { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 12px 16px; border-bottom: 1px solid var(--line-soft); }
+.meter:last-child { border-bottom: 0; }
+.meter .name { font-weight: 600; font-size: 14px; }
+.meter .beh { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--muted); }
+.meter .val { font-family: "IBM Plex Mono", monospace; font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; align-self: center; }
+.meter .bar { grid-column: 1 / -1; height: 8px; background: var(--panel-2); border: 1px solid var(--line-soft); position: relative; overflow: hidden; }
+.meter .bar i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--muted); transition: width 80ms linear, background 120ms; }
+.meter.on .bar i { background: var(--spike); box-shadow: 0 0 8px var(--spike-glow); }
+.meter .state { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); align-self: center; }
+.meter.on .state { color: var(--spike); }
+
+/* ---- notes ---- */
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px 40px; border-top: 1px solid var(--line); padding-top: 22px; }
+.notes p, .notes li { max-width: 62ch; color: var(--ink); }
+.notes h2 { margin-bottom: 10px; }
+.notes ul { margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.params { width: 100%; border-collapse: collapse; font-family: "IBM Plex Mono", monospace; font-size: 12.5px; margin-top: 8px; }
+.params td { padding: 5px 0; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+.params td:last-child { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tablewrap { overflow-x: auto; }
+code { font-family: "IBM Plex Mono", monospace; font-size: 0.92em; background: var(--panel-2); padding: 1px 5px; }
+
+@media (max-width: 900px) {
+  .masthead, .lab, .two { grid-template-columns: 1fr; }
+  .stim-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stim, .meter .bar i { transition: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div>
+      <div class="eyebrow">Live spiking model · scaled from the complete male <i>Drosophila</i> CNS</div>
+      <h1>Fly Connectome Simulator</h1>
+      <p class="lede">On 3 September 2026 Google Research, Janelia, the MRC LMB and Cambridge published the wiring of an entire male fruit fly central nervous system: every neuron in the brain, both optic lobes and the nerve cord. This page runs a scaled-down spiking network with that architecture. Give it sugar, light, touch or pheromone and watch activity travel from sensors to muscles.</p>
+    </div>
+    <dl class="specimen" aria-label="Specimen">
+      <dt>specimen</dt><dd><i>Drosophila melanogaster</i>, adult male</dd>
+      <dt>extent</dt><dd>brain + both optic lobes + ventral nerve cord</dd>
+      <dt>neurons</dt><dd>166,700</dd>
+      <dt>synapses</dt><dd>~125,000,000</dd>
+      <dt>cell types</dt><dd>11,710</dd>
+      <dt>published</dt><dd>Cell, 3 Sep 2026</dd>
+      <dt>this model</dt><dd id="scaleLabel">6,000 neurons (1 : 28)</dd>
+    </dl>
+  </header>
+
+  <section class="lab">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Central nervous system</h2>
+        <span class="sub" id="clock">t = 0.000 s</span>
+      </div>
+      <div class="map-wrap">
+        <canvas id="map" width="900" height="860" aria-label="Map of the fly central nervous system with spiking neurons"></canvas>
+        <div class="tip" id="tip"></div>
+      </div>
+      <div class="legend">
+        <span style="--c: var(--olL)">optic lobe L</span>
+        <span style="--c: var(--cb)">central brain</span>
+        <span style="--c: var(--olR)">optic lobe R</span>
+        <span style="--c: var(--vnc)">nerve cord</span>
+        <span style="--c: var(--sens)">sensory</span>
+        <span class="spk">spike</span>
+        <span style="margin-left:auto">hover a neuron · click to poke</span>
+      </div>
+    </div>
+
+    <div class="panel controls">
+      <div class="ctl-section">
+        <h3>Stimulate</h3>
+        <div class="stim-grid" id="stims"></div>
+      </div>
+      <div class="ctl-section">
+        <h3>Network</h3>
+        <div class="slider">
+          <label for="sN">Neurons</label><output id="oN">6,000</output>
+          <input id="sN" type="range" min="1000" max="20000" step="500" value="6000">
+        </div>
+        <div class="slider">
+          <label for="sW">Synaptic strength</label><output id="oW">1.00×</output>
+          <input id="sW" type="range" min="0.25" max="3" step="0.05" value="1">
+        </div>
+        <div class="slider">
+          <label for="sI">Inhibitory fraction</label><output id="oI">38%</output>
+          <input id="sI" type="range" min="0.1" max="0.7" step="0.02" value="0.38">
+        </div>
+        <div class="slider">
+          <label for="sNoise">Background noise</label><output id="oNoise">0.85 mV/√ms</output>
+          <input id="sNoise" type="range" min="0" max="2" step="0.05" value="0.85">
+        </div>
+        <div class="slider">
+          <label for="sSpeed">Speed</label><output id="oSpeed">0.5× real time</output>
+          <input id="sSpeed" type="range" min="1" max="60" step="1" value="16">
+        </div>
+        <div class="row">
+          <button class="btn primary" id="btnRun" type="button">Pause</button>
+          <button class="btn" id="btnRewire" type="button">Rewire (new seed)</button>
+          <button class="btn" id="btnReset" type="button">Reset state</button>
+        </div>
+      </div>
+      <div class="ctl-section">
+        <h3>Wiring</h3>
+        <div class="stats">
+          <div><span>neurons</span><span id="stN">–</span></div>
+          <div><span>connections</span><span id="stE">–</span></div>
+          <div><span>synapses</span><span id="stS">–</span></div>
+          <div><span>per neuron</span><span id="stK">–</span></div>
+          <div><span>spikes / s</span><span id="stRate">–</span></div>
+          <div><span>seed</span><span id="stSeed">–</span></div>
+        </div>
+        <label class="file">
+          <span class="btn">Load a real edge list (CSV)</span>
+          <input id="file" type="file" accept=".csv,.tsv,.txt">
+          <span id="fileName"></span>
+        </label>
+        <p class="note">Export connections from neuPrint (<code>bodyId_pre, bodyId_post, weight</code>, optional <code>roi</code>) or FlyWire. Files up to a few hundred thousand connections run smoothly in the browser.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Spike raster</h2>
+      <span class="sub">last 1.5 s · one row per neuron, sorted by region</span>
+    </div>
+    <canvas id="raster" class="plot" width="1240" height="300" aria-label="Spike raster"></canvas>
+  </section>
+
+  <section class="two">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Population rate</h2>
+        <span class="sub">Hz per neuron · 10 ms bins · last 3 s</span>
+      </div>
+      <canvas id="rates" class="plot" width="740" height="260" aria-label="Population firing rate per region"></canvas>
+    </div>
+    <div class="panel meters">
+      <div class="panel-head">
+        <h2>Motor read-out</h2>
+        <span class="sub">Hz per motor neuron · last 100 ms</span>
+      </div>
+      <div id="meters"></div>
+    </div>
+  </section>
+
+  <section class="notes">
+    <div>
+      <h2>What is real here, and what is not</h2>
+      <p>The scale, the regions, and the neuron model are taken from published work. The connectome announced on 3 September 2026 contains 166,700 fully proofread neurons and about 125 million synapses across the brain, both optic lobes and the ventral nerve cord, sorted into 11,710 cell types, with <i>fruitless</i> and <i>doublesex</i> expression annotated so the male wiring can be compared with the female FlyWire brain.</p>
+      <p style="margin-top:10px">The wiring in this page is <b>generated</b>, not measured. It reproduces region-level statistics (optic lobes feed the central brain, descending neurons feed the nerve cord, about 38% of neurons inhibitory) and a handful of well-studied sensorimotor pathways: sugar taste to the proboscis motor neuron MN9, bitter taste suppressing it, photoreceptors through lamina, medulla and lobula to visual projection and descending neurons, antennal touch to grooming, and pheromone to the male-specific P1 neurons, pIP10 and the wing motor neurons that make courtship song. Load an edge list exported from neuPrint or FlyWire to run the same neuron model on real connections.</p>
+    </div>
+    <div>
+      <h2>Neuron model</h2>
+      <p>Each neuron is a leaky integrate-and-fire unit with the parameters of the whole-brain model of Shiu et al. (Nature, 2024), which predicted proboscis extension from sugar input on the FlyWire connectome with about 95% accuracy. Every synapse adds a fixed 0.275 mV, signed by the presynaptic neuron's transmitter, and decays with a 5 ms time constant.</p>
+      <div class="tablewrap">
+      <table class="params">
+        <tr><td>resting potential</td><td>−52 mV</td></tr>
+        <tr><td>spike threshold</td><td>−45 mV</td></tr>
+        <tr><td>reset potential</td><td>−52 mV</td></tr>
+        <tr><td>membrane time constant</td><td>20 ms</td></tr>
+        <tr><td>refractory period</td><td>2.2 ms</td></tr>
+        <tr><td>synaptic time constant</td><td>5 ms</td></tr>
+        <tr><td>weight per synapse</td><td>0.275 mV × count</td></tr>
+        <tr><td>integration step</td><td>0.5 ms, Euler</td></tr>
+      </table>
+      </div>
+    </div>
+    <div>
+      <h2>Sources</h2>
+      <ul>
+        <li><a href="https://research.google/blog/a-connectomics-milestone-mapping-the-complete-male-fruit-fly-brain/">Google Research: A connectomics milestone, mapping the complete male fruit fly brain</a> (3 Sep 2026)</li>
+        <li><a href="https://www.janelia.org/news/researchers-reveal-connectome-of-the-male-fruit-fly-central-nervous-system">Janelia: Researchers reveal connectome of the male fruit fly central nervous system</a></li>
+        <li><a href="https://www.cell.com/cell/fulltext/S0092-8674(26)00942-6">Sexual dimorphism in the complete <i>Drosophila</i> male central nervous system connectome</a>, Cell (2026)</li>
+        <li><a href="https://doi.org/10.1038/s41586-024-07763-9">Shiu et al., A <i>Drosophila</i> computational brain model reveals sensorimotor processing</a>, Nature (2024)</li>
+        <li><a href="https://neuprint.janelia.org/">neuPrint</a> and <a href="https://flywire.ai/">FlyWire</a> for the data itself</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script src="sim.js"></script>
+<script>
+(function () {
+  'use strict';
+  var F = window.FlySim;
+  var REGIONS = F.REGIONS;
+  var REGION_TOKEN = { olL: '--olL', cb: '--cb', olR: '--olR', vnc: '--vnc', sens: '--sens' };
+
+  // ---------- theme tokens ----------
+  var tok = {};
+  function readTokens() {
+    var cs = getComputedStyle(document.documentElement);
+    ['--bg', '--panel', '--panel-2', '--ink', '--muted', '--line', '--line-soft', '--spike', '--olL', '--cb', '--olR', '--vnc', '--sens', '--dot-alpha'].forEach(function (k) {
+      tok[k] = cs.getPropertyValue(k).trim();
+    });
+  }
+  readTokens();
+  var mq = window.matchMedia('(prefers-color-scheme: dark)');
+  mq.addEventListener && mq.addEventListener('change', function () { readTokens(); staticDirty = true; });
+  new MutationObserver(function () { readTokens(); staticDirty = true; }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  function regionColor(ri) { return tok[REGION_TOKEN[REGIONS[ri].id]]; }
+  function fmt(n) { return n.toLocaleString('en-US'); }
+
+  // ---------- state ----------
+  var net = null;
+  var running = true;
+  var stepsPerFrame = 16;
+  var seed = 7;
+  var custom = false; // real edge list loaded
+
+  var SPK_CAP = 400000;
+  var spkT = new Float32Array(SPK_CAP), spkId = new Int32Array(SPK_CAP), spkHead = 0, spkLen = 0;
+  var BIN = 10, NBINS = 300; // ms, count
+  var binCounts = [], binIdx = 0, binT = 0;
+  var stimMarks = []; // {t, label}
+  var spikesLastSecond = 0, spikeWindowStart = 0, spikesPerSec = 0;
+
+  function makeNet() {
+    net = new F.Network({
+      N: +sN.value, seed: seed,
+      inhFraction: +sI.value, weightScale: +sW.value, noise: +sNoise.value
+    });
+    custom = false;
+    afterBuild();
+  }
+  function afterBuild() {
+    net.onSpike = recordSpike;
+    spkHead = 0; spkLen = 0; stimMarks = [];
+    binCounts = [];
+    for (var r = 0; r < REGIONS.length; r++) binCounts.push(new Float32Array(NBINS));
+    binIdx = 0; binT = 0;
+    spikesLastSecond = 0; spikeWindowStart = 0; spikesPerSec = 0;
+    staticDirty = true;
+    updateStats();
+    buildStimButtons();
+  }
+  function recordSpike(t, i) {
+    spkT[spkHead] = t; spkId[spkHead] = i;
+    spkHead = (spkHead + 1) % SPK_CAP;
+    if (spkLen < SPK_CAP) spkLen++;
+  }
+
+  // ---------- DOM ----------
+  var $ = function (id) { return document.getElementById(id); };
+  var sN = $('sN'), sW = $('sW'), sI = $('sI'), sNoise = $('sNoise'), sSpeed = $('sSpeed');
+  var map = $('map'), mctx = map.getContext('2d');
+  var raster = $('raster'), rctx = raster.getContext('2d');
+  var rates = $('rates'), cctx = rates.getContext('2d');
+  var tip = $('tip');
+  var staticLayer = document.createElement('canvas');
+  var staticDirty = true;
+
+  function updateStats() {
+    $('stN').textContent = fmt(net.N);
+    $('stE').textContent = fmt(net.E);
+    $('stS').textContent = fmt(Math.round(net.totalSynapses));
+    $('stK').textContent = (net.E / net.N).toFixed(1) + ' (real ≈ 750)';
+    $('stSeed').textContent = custom ? 'file' : String(seed);
+    $('scaleLabel').textContent = fmt(net.N) + ' neurons (1 : ' + Math.round(F.REAL.neurons / net.N) + ')';
+  }
+
+  var stimButtons = {};
+  function buildStimButtons() {
+    var box = $('stims');
+    box.innerHTML = '';
+    stimButtons = {};
+    var list;
+    if (custom) {
+      list = net.groups.map(function (g) { return { id: g.id, label: g.label, to: 'poke every neuron in ' + g.region, groups: [g.id], rate: 60, duration: 300 }; });
+    } else {
+      var to = { sugar: 'Gr64f → SEZ → MN9 proboscis', bitter: 'bitter interneurons inhibit MN9', flashL: 'lamina → medulla → lobula → DN', flashR: 'lamina → medulla → lobula → DN', flash: 'both optic lobes → DN → legs', touch: 'JO → grooming → aDN → legs', pheromone: 'P1 (fru+) → pIP10 → wings' };
+      list = Object.keys(F.STIMULI).map(function (k) { var s = F.STIMULI[k]; return { id: k, label: s.label, to: to[k], groups: s.groups, rate: s.rate, duration: s.duration }; });
+    }
+    list.forEach(function (s, n) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'stim';
+      b.innerHTML = '<span>' + s.label + '</span><span class="key">' + (n + 1) + '</span><span class="to">' + s.to + '</span>';
+      b.addEventListener('click', function () { fire(s); });
+      box.appendChild(b);
+      stimButtons[s.id] = { el: b, spec: s, until: 0 };
+    });
+  }
+  function fire(s) {
+    s.groups.forEach(function (gid) { var g = net.groupIndex[gid]; if (g) net.stimulate(g.members, s.rate, s.duration); });
+    stimMarks.push({ t: net.t, label: s.label });
+    if (stimMarks.length > 40) stimMarks.shift();
+    var sb = stimButtons[s.id];
+    if (sb) { sb.until = net.t + s.duration; sb.el.classList.add('active'); }
+    if (!running) toggleRun();
+  }
+
+  // meters
+  var meterEls = {};
+  (function () {
+    var box = $('meters');
+    F.READOUTS.forEach(function (ro) {
+      var d = document.createElement('div');
+      d.className = 'meter';
+      d.innerHTML = '<div><div class="name">' + ro.label + '</div><div class="beh">' + ro.behaviour + '</div></div><div><div class="val"><span class="v">0</span> Hz</div><div class="state">quiet</div></div><div class="bar"><i></i></div>';
+      box.appendChild(d);
+      meterEls[ro.id] = { el: d, v: d.querySelector('.v'), bar: d.querySelector('.bar i'), state: d.querySelector('.state') };
+    });
+  })();
+
+  // ---------- controls ----------
+  function bindSlider(input, output, format, onInput) {
+    var f = function () { output.textContent = format(+input.value); onInput && onInput(+input.value); };
+    input.addEventListener('input', f);
+    return f;
+  }
+  bindSlider(sN, $('oN'), function (v) { return fmt(v); });
+  sN.addEventListener('change', function () { makeNet(); });
+  bindSlider(sW, $('oW'), function (v) { return v.toFixed(2) + '×'; }, function (v) { net.weightScale = v; });
+  bindSlider(sI, $('oI'), function (v) { return Math.round(v * 100) + '%'; });
+  sI.addEventListener('change', function () { if (!custom) makeNet(); });
+  bindSlider(sNoise, $('oNoise'), function (v) { return v.toFixed(2) + ' mV/√ms'; }, function (v) { net.noise = v; });
+  var speedFmt = bindSlider(sSpeed, $('oSpeed'), function (v) { stepsPerFrame = v; return (v * 0.5 * 60 / 1000).toFixed(2).replace(/\.?0+$/, '') + '× real time'; });
+
+  function toggleRun() { running = !running; $('btnRun').textContent = running ? 'Pause' : 'Run'; }
+  $('btnRun').addEventListener('click', toggleRun);
+  $('btnRewire').addEventListener('click', function () { seed = (seed * 7919 + 13) % 100000 + 1; makeNet(); });
+  $('btnReset').addEventListener('click', function () { net.reset(); net.onSpike = recordSpike; spkHead = 0; spkLen = 0; stimMarks = []; binCounts.forEach(function (b) { b.fill(0); }); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.target && /input|textarea|select/i.test(e.target.tagName)) return;
+    if (e.key === ' ') { e.preventDefault(); toggleRun(); return; }
+    var n = parseInt(e.key, 10);
+    if (n >= 1 && n <= 9) {
+      var keys = Object.keys(stimButtons);
+      if (keys[n - 1]) fire(stimButtons[keys[n - 1]].spec);
+    }
+  });
+
+  // ---------- file loading ----------
+  $('file').addEventListener('change', function (ev) {
+    var f = ev.target.files && ev.target.files[0];
+    if (!f) return;
+    $('fileName').textContent = 'reading ' + f.name + '…';
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var res = parseEdgeList(String(reader.result));
+        net = new F.Network({ N: 10, seed: seed, inhFraction: +sI.value, weightScale: +sW.value, noise: +sNoise.value });
+        net.loadEdgeList(res.pre, res.post, res.w, res.regionOf);
+        custom = true;
+        afterBuild();
+        $('fileName').textContent = f.name + ': ' + fmt(net.N) + ' neurons, ' + fmt(net.E) + ' connections';
+        sN.value = Math.min(20000, Math.max(1000, net.N)); $('oN').textContent = fmt(net.N);
+      } catch (err) {
+        $('fileName').textContent = 'Could not read that file: ' + err.message;
+      }
+    };
+    reader.readAsText(f);
+  });
+
+  function parseEdgeList(text) {
+    var lines = text.split(/\r?\n/).filter(function (l) { return l.trim().length; });
+    if (!lines.length) throw new Error('the file is empty');
+    var sep = lines[0].indexOf('\t') >= 0 ? '\t' : ',';
+    var head = lines[0].split(sep).map(function (h) { return h.trim().replace(/^"|"$/g, '').toLowerCase(); });
+    var hasHeader = head.some(function (h) { return /[a-z]/.test(h); });
+    function find(cands, fallback) {
+      for (var c = 0; c < cands.length; c++) { var i = head.indexOf(cands[c]); if (i >= 0) return i; }
+      return fallback;
+    }
+    var ip = hasHeader ? find(['bodyid_pre', 'pre', 'pre_root_id', 'pre_pt_root_id', 'source', 'pre_id', 'bodyid_source'], 0) : 0;
+    var io = hasHeader ? find(['bodyid_post', 'post', 'post_root_id', 'post_pt_root_id', 'target', 'post_id', 'bodyid_target'], 1) : 1;
+    var iw = hasHeader ? find(['weight', 'syn_count', 'count', 'n_syn', 'synapses', 'nt_weight'], 2) : 2;
+    var ir = hasHeader ? find(['roi', 'region', 'neuropil', 'pre_roi', 'roi_pre'], -1) : -1;
+    var pre = [], post = [], w = [];
+    var regionByNode = ir >= 0 ? new Map() : null;
+    for (var l = hasHeader ? 1 : 0; l < lines.length; l++) {
+      var cols = lines[l].split(sep);
+      if (cols.length <= Math.max(ip, io)) continue;
+      var a = cols[ip].trim(), b = cols[io].trim();
+      if (!a || !b) continue;
+      pre.push(a); post.push(b);
+      w.push(iw >= 0 && cols[iw] !== undefined ? parseFloat(cols[iw]) || 1 : 1);
+      if (regionByNode && cols[ir] !== undefined) regionByNode.set(a, cols[ir].trim());
+    }
+    if (!pre.length) throw new Error('no pre/post pairs found');
+    var regionOf = null;
+    if (regionByNode) {
+      regionOf = function (id) {
+        var s = regionByNode.get(id) || '';
+        if (/vnc|leg|neck|wing|haltere|abd|anmp|lnmp|mtnmp|intnp|ov\b|ventral nerve/i.test(s)) return 'vnc';
+        if (/^(me|lo|lop|la|ame)\(l\)|optic.*(left|_l)|\(l\)$/i.test(s) && /me|lo|la|optic/i.test(s)) return 'olL';
+        if (/^(me|lo|lop|la|ame)\(r\)|optic.*(right|_r)|\(r\)$/i.test(s) && /me|lo|la|optic/i.test(s)) return 'olR';
+        if (/sens|afferent|photoreceptor/i.test(s)) return 'sens';
+        return 'cb';
+      };
+    }
+    return { pre: pre, post: post, w: w, regionOf: regionOf };
+  }
+
+  // ---------- map drawing ----------
+  var W = 900, H = 860;
+  var hoverIdx = -1;
+  function px(x) { return x * W; }
+  function py(y) { return y * H; }
+
+  function drawStatic() {
+    staticLayer.width = W; staticLayer.height = H;
+    var c = staticLayer.getContext('2d');
+    c.fillStyle = tok['--panel'];
+    c.fillRect(0, 0, W, H);
+    // silhouettes
+    c.lineWidth = 1;
+    c.strokeStyle = tok['--line'];
+    c.setLineDash([]);
+    REGIONS.forEach(function (R) {
+      if (R.id === 'sens') return;
+      c.beginPath();
+      c.ellipse(px(R.cx), py(R.cy), px(R.rx) + 10, py(R.ry) + 10, 0, 0, Math.PI * 2);
+      c.stroke();
+    });
+    // neck connective
+    c.beginPath(); c.moveTo(px(0.47), py(0.435)); c.lineTo(px(0.47), py(0.51));
+    c.moveTo(px(0.53), py(0.435)); c.lineTo(px(0.53), py(0.51)); c.stroke();
+    // region labels
+    c.fillStyle = tok['--muted'];
+    c.font = '500 12px "IBM Plex Mono", monospace';
+    c.textAlign = 'center';
+    c.fillText('OPTIC LOBE L', px(0.19), py(0.51));
+    c.fillText('CENTRAL BRAIN', px(0.50), py(0.135));
+    c.fillText('OPTIC LOBE R', px(0.81), py(0.51));
+    c.fillText('VENTRAL NERVE CORD', px(0.50), py(0.97));
+    c.textAlign = 'left';
+    c.fillText('antennae', px(0.56), py(0.085));
+    c.fillText('forelegs', px(0.70), py(0.60));
+    c.fillText('eye', px(0.005), py(0.24));
+    c.textAlign = 'right';
+    c.fillText('eye', px(0.995), py(0.24));
+    c.textAlign = 'left';
+    // neurons
+    var alpha = parseFloat(tok['--dot-alpha']) || 0.4;
+    c.globalAlpha = alpha;
+    var N = net.N;
+    for (var r = 0; r < REGIONS.length; r++) {
+      c.fillStyle = regionColor(r);
+      var s = net.regionStart[r], e = s + net.regionCount[r];
+      for (var i = s; i < e; i++) {
+        var x = px(net.x[i]), y = py(net.y[i]);
+        if (net.sign[i] < 0) { c.fillRect(x - 0.9, y - 0.9, 1.8, 1.8); }
+        else { c.beginPath(); c.arc(x, y, 1.15, 0, 6.2832); c.fill(); }
+      }
+    }
+    c.globalAlpha = 1;
+    staticDirty = false;
+  }
+
+  function drawMap() {
+    if (staticDirty) drawStatic();
+    mctx.drawImage(staticLayer, 0, 0);
+    var t = net.t, last = net.lastSpike, N = net.N;
+    var FADE = 90;
+    mctx.fillStyle = tok['--spike'];
+    for (var i = 0; i < N; i++) {
+      var age = t - last[i];
+      if (age < FADE) {
+        var a = 1 - age / FADE;
+        mctx.globalAlpha = a;
+        var rad = 1.6 + 2.2 * a;
+        mctx.beginPath(); mctx.arc(px(net.x[i]), py(net.y[i]), rad, 0, 6.2832); mctx.fill();
+      }
+    }
+    mctx.globalAlpha = 1;
+    // hover ring
+    if (hoverIdx >= 0) {
+      mctx.strokeStyle = tok['--ink']; mctx.lineWidth = 1.2;
+      mctx.beginPath(); mctx.arc(px(net.x[hoverIdx]), py(net.y[hoverIdx]), 6, 0, 6.2832); mctx.stroke();
+    }
+  }
+
+  // hover / click
+  function nearest(cx, cy) {
+    var best = -1, bd = 0.0006; // ~ 2.4% of width
+    for (var i = 0; i < net.N; i++) {
+      var dx = net.x[i] - cx, dy = net.y[i] - cy, d = dx * dx + dy * dy;
+      if (d < bd) { bd = d; best = i; }
+    }
+    return best;
+  }
+  function canvasPos(ev) {
+    var r = map.getBoundingClientRect();
+    return { x: (ev.clientX - r.left) / r.width, y: (ev.clientY - r.top) / r.height, px: ev.clientX - r.left, py: ev.clientY - r.top };
+  }
+  map.addEventListener('mousemove', function (ev) {
+    var p = canvasPos(ev);
+    hoverIdx = nearest(p.x, p.y);
+    if (hoverIdx < 0) { tip.style.display = 'none'; return; }
+    var i = hoverIdx;
+    var g = net.group[i] >= 0 ? F.GROUPS[net.group[i]].label : 'unlabelled ' + REGIONS[net.region[i]].name.toLowerCase() + ' neuron';
+    var deg = net.rowPtr[i + 1] - net.rowPtr[i];
+    var idLabel = net.nodeIds ? net.nodeIds[i] : '#' + i;
+    tip.innerHTML = '<b>' + idLabel + '</b> · ' + REGIONS[net.region[i]].name + '<br>' + g + '<br>' + (net.sign[i] < 0 ? 'inhibitory' : 'excitatory') + ' · ' + deg + ' outputs · v = ' + net.v[i].toFixed(1) + ' mV';
+    tip.style.left = p.px + 'px'; tip.style.top = p.py + 'px'; tip.style.display = 'block';
+  });
+  map.addEventListener('mouseleave', function () { hoverIdx = -1; tip.style.display = 'none'; });
+  map.addEventListener('click', function (ev) {
+    var p = canvasPos(ev), members = [], r2 = 0.03 * 0.03;
+    for (var i = 0; i < net.N; i++) { var dx = net.x[i] - p.x, dy = net.y[i] - p.y; if (dx * dx + dy * dy < r2) members.push(i); }
+    if (!members.length) return;
+    net.stimulate(members, 150, 200);
+    stimMarks.push({ t: net.t, label: 'poke' });
+    if (!running) toggleRun();
+  });
+
+  // ---------- raster ----------
+  var RW = 1240, RH = 300, RWIN = 1500, RLEFT = 134, RTOP = 22;
+  var SHORT = { olL: 'optic lobe L', cb: 'central brain', olR: 'optic lobe R', vnc: 'nerve cord', sens: 'sensory' };
+  function drawRaster() {
+    rctx.fillStyle = tok['--panel']; rctx.fillRect(0, 0, RW, RH);
+    var t = net.t, N = net.N, t0 = t - RWIN;
+    var plotW = RW - RLEFT - 12, plotH = RH - RTOP - 8;
+    // region bands
+    rctx.font = '500 11px "IBM Plex Mono", monospace';
+    rctx.textAlign = 'right';
+    for (var r = 0; r < REGIONS.length; r++) {
+      if (!net.regionCount[r]) continue;
+      var y0 = RTOP + net.regionStart[r] / N * plotH, y1 = RTOP + (net.regionStart[r] + net.regionCount[r]) / N * plotH;
+      rctx.fillStyle = r % 2 ? tok['--panel-2'] : tok['--panel'];
+      rctx.fillRect(RLEFT, y0, plotW, y1 - y0);
+      rctx.fillStyle = regionColor(r);
+      rctx.fillRect(RLEFT - 6, y0, 3, y1 - y0);
+      if (y1 - y0 > 12) { rctx.fillStyle = tok['--muted']; rctx.fillText(SHORT[REGIONS[r].id], RLEFT - 12, (y0 + y1) / 2 + 4); }
+    }
+    // time axis
+    rctx.fillStyle = tok['--muted']; rctx.textAlign = 'center';
+    for (var s = 0; s <= RWIN; s += 500) {
+      var x = RLEFT + s / RWIN * plotW;
+      rctx.fillStyle = tok['--line-soft']; rctx.fillRect(x, RTOP, 1, plotH);
+      rctx.fillStyle = tok['--muted'];
+      rctx.fillText('−' + ((RWIN - s) / 1000).toFixed(1) + ' s', Math.min(RW - 24, Math.max(RLEFT + 24, x)), 14);
+    }
+    // stimulus marks
+    rctx.textAlign = 'left';
+    for (var m = 0; m < stimMarks.length; m++) {
+      var sm = stimMarks[m];
+      if (sm.t < t0) continue;
+      var sx = RLEFT + (sm.t - t0) / RWIN * plotW;
+      rctx.fillStyle = tok['--spike'];
+      rctx.fillRect(sx, RTOP, 1, plotH);
+      var flip = sx > RLEFT + plotW - 150;
+      rctx.textAlign = flip ? 'right' : 'left';
+      rctx.fillText(sm.label, flip ? sx - 4 : sx + 4, RTOP + 10);
+    }
+    // spikes
+    var k = spkLen, idx = (spkHead - 1 + SPK_CAP) % SPK_CAP;
+    var colors = []; for (r = 0; r < REGIONS.length; r++) colors.push(regionColor(r));
+    var scaleX = plotW / RWIN, scaleY = plotH / N;
+    var lastColor = -1;
+    while (k-- > 0) {
+      var st = spkT[idx];
+      if (st < t0) break;
+      var id = spkId[idx];
+      var reg = net.region[id];
+      if (reg !== lastColor) { rctx.fillStyle = colors[reg]; lastColor = reg; }
+      rctx.fillRect(RLEFT + (st - t0) * scaleX, RTOP + id * scaleY, 1.5, Math.max(1, scaleY));
+      idx = (idx - 1 + SPK_CAP) % SPK_CAP;
+    }
+  }
+
+  // ---------- rate chart ----------
+  var CW = 740, CH = 260, CL = 62, CR = 14, CT = 16, CB = 26;
+  function accumulateRates() {
+    // called after each sim step with net.stepCounts
+    var c = net.stepCounts;
+    for (var r = 0; r < REGIONS.length; r++) binCounts[r][binIdx] += c[r];
+    binT += net.dt;
+    if (binT >= BIN) {
+      binT = 0; binIdx = (binIdx + 1) % NBINS;
+      for (r = 0; r < REGIONS.length; r++) binCounts[r][binIdx] = 0;
+    }
+  }
+  function drawRates() {
+    cctx.fillStyle = tok['--panel']; cctx.fillRect(0, 0, CW, CH);
+    var plotW = CW - CL - CR, plotH = CH - CT - CB;
+    // find max
+    var maxHz = 5;
+    var series = [];
+    for (var r = 0; r < REGIONS.length; r++) {
+      var n = net.regionCount[r]; if (!n) { series.push(null); continue; }
+      var arr = new Float32Array(NBINS);
+      for (var b = 0; b < NBINS; b++) {
+        var bi = (binIdx + 1 + b) % NBINS;
+        var hz = binCounts[r][bi] / n / (BIN / 1000);
+        arr[b] = hz; if (b < NBINS - 1 && hz > maxHz) maxHz = hz;
+      }
+      series.push(arr);
+    }
+    var stepHz = Math.max(5, Math.ceil(maxHz / 4 / 5) * 5);
+    maxHz = stepHz * 4;
+    // grid
+    cctx.font = '500 11px "IBM Plex Mono", monospace';
+    cctx.textAlign = 'right';
+    for (var g = 0; g <= 4; g++) {
+      var yv = maxHz * g / 4, y = CT + plotH - yv / maxHz * plotH;
+      cctx.fillStyle = tok['--line-soft']; cctx.fillRect(CL, y, plotW, 1);
+      cctx.fillStyle = tok['--muted']; cctx.fillText(yv.toFixed(0) + (g === 4 ? ' Hz' : ''), CL - 8, y + 4);
+    }
+    cctx.textAlign = 'center';
+    for (var s = 0; s <= 3; s++) {
+      var x = CL + s / 3 * plotW;
+      cctx.fillStyle = tok['--muted'];
+      cctx.fillText(s === 3 ? 'now' : '−' + (3 - s) + ' s', Math.min(CW - 20, Math.max(CL + 16, x)), CH - 8);
+    }
+    // lines
+    cctx.lineWidth = 1.5; cctx.lineJoin = 'round';
+    for (r = 0; r < REGIONS.length; r++) {
+      var arr2 = series[r]; if (!arr2) continue;
+      cctx.strokeStyle = regionColor(r);
+      cctx.beginPath();
+      for (b = 0; b < NBINS; b++) {
+        var xx = CL + b / (NBINS - 1) * plotW, yy = CT + plotH - Math.min(arr2[b], maxHz) / maxHz * plotH;
+        if (b === 0) cctx.moveTo(xx, yy); else cctx.lineTo(xx, yy);
+      }
+      cctx.stroke();
+      // endpoint
+      var ev = arr2[NBINS - 2];
+      cctx.fillStyle = regionColor(r);
+      cctx.beginPath(); cctx.arc(CL + plotW, CT + plotH - Math.min(ev, maxHz) / maxHz * plotH, 3, 0, 6.2832); cctx.fill();
+    }
+  }
+
+  // ---------- meters ----------
+  function updateMeters() {
+    var t = net.t, last = net.lastSpike;
+    // count spikes in last 100 ms per readout group from the ring buffer
+    var t0 = t - 100;
+    var counts = {}; var sets = {};
+    F.READOUTS.forEach(function (ro) { counts[ro.id] = 0; var g = net.groupIndex[ro.id]; sets[ro.id] = g ? g.members : null; });
+    var k = spkLen, idx = (spkHead - 1 + SPK_CAP) % SPK_CAP;
+    var byId = {};
+    F.READOUTS.forEach(function (ro) { if (sets[ro.id]) sets[ro.id].forEach(function (i) { byId[i] = ro.id; }); });
+    while (k-- > 0) {
+      var st = spkT[idx]; if (st < t0) break;
+      var ro = byId[spkId[idx]]; if (ro) counts[ro]++;
+      idx = (idx - 1 + SPK_CAP) % SPK_CAP;
+    }
+    F.READOUTS.forEach(function (ro) {
+      var m = meterEls[ro.id];
+      var n = sets[ro.id] ? sets[ro.id].length : 0;
+      if (!n) { m.v.textContent = '–'; m.bar.style.width = '0%'; m.state.textContent = 'no such neurons in this file'; m.el.classList.remove('on'); return; }
+      var hz = counts[ro.id] / n / 0.1;
+      m.v.textContent = hz.toFixed(0);
+      m.bar.style.width = Math.min(100, hz / 150 * 100) + '%';
+      var on = hz >= 20;
+      m.el.classList.toggle('on', on);
+      m.state.textContent = on ? ro.behaviour : 'quiet';
+    });
+  }
+
+  // ---------- main loop ----------
+  var frames = 0;
+  function frame() {
+    if (running) {
+      for (var s = 0; s < stepsPerFrame; s++) {
+        var n = net.step();
+        accumulateRates();
+        spikesLastSecond += n;
+      }
+      if (net.t - spikeWindowStart >= 1000) {
+        spikesPerSec = spikesLastSecond / ((net.t - spikeWindowStart) / 1000);
+        spikesLastSecond = 0; spikeWindowStart = net.t;
+        $('stRate').textContent = fmt(Math.round(spikesPerSec)) + ' (' + (spikesPerSec / net.N).toFixed(1) + ' Hz/neuron)';
+      }
+      for (var k in stimButtons) { var sb = stimButtons[k]; if (sb.until && net.t >= sb.until) { sb.until = 0; sb.el.classList.remove('active'); } }
+    }
+    drawMap();
+    drawRaster();
+    if (frames % 2 === 0) { drawRates(); updateMeters(); }
+    $('clock').textContent = 't = ' + (net.t / 1000).toFixed(3) + ' s';
+    frames++;
+    requestAnimationFrame(frame);
+  }
+
+  // ---------- boot ----------
+  makeNet();
+  speedFmt();
+  // a first stimulus so the page opens mid-action
+  setTimeout(function () { fire(stimButtons.sugar.spec); }, 900);
+  setTimeout(function () { fire(stimButtons.flash.spec); }, 3200);
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
