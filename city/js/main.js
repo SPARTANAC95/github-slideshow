@@ -53,16 +53,15 @@
       this.ui.toast(`Skipped ${days} day${days === 1 ? '' : 's'}.`);
     }
     maybeSave(force) { const now = Date.now(); if (force || now - this.lastSave > 20000) { this.world.save(); this.lastSave = now; } }
-    newCity() {
-      const seed = prompt('Seed for the new city (any word or number). Leave blank for a random one.', randomSeed());
-      if (seed === null) return;
+    newCity(seed) {
+      seed = (seed || '').trim();
       World.clearSave();
-      const w = new World(seed.trim() || randomSeed());
+      const w = new World(seed || randomSeed());
       w.generate();
       this.world = w; w.onDay = () => this.maybeSave();
       this.renderer.setWorld(w); this.ui.setWorld(w);
       this.ui.rebuildFeed(); this.ui.refresh(true); this.ui.setTab('feed');
-      history.replaceState(null, '', '#seed=' + encodeURIComponent(w.seed));
+      try { history.replaceState(null, '', '#seed=' + encodeURIComponent(w.seed)); } catch (e) { }
       this.ui.toast(`Welcome to a brand new Pebbleton (seed ${w.seed}).`);
     }
   }

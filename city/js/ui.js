@@ -37,7 +37,7 @@
       if (act === 'locate') { const c = w.citizen(+el.dataset.id); if (c) { this.app.renderer.selected = c.id; this.app.renderer.focusOn(c); this.closeSheet(); } }
       if (act === 'locate-group') { this.app.renderer.selectedGroup = +el.dataset.id; this.app.renderer.selected = null; this.closeSheet(); }
       if (act === 'unfollow') { this.follow = null; this.rebuildFeed(); }
-      if (act === 'newcity') this.app.newCity();
+      if (act === 'newcity') { const inp = document.getElementById('seed-input'); this.app.newCity(inp ? inp.value : ''); }
       if (act === 'save') { const ok = w.save(); this.toast(ok ? 'Saved to this browser.' : 'Could not save (storage full or blocked).'); }
       if (act === 'jump') this.app.jump(+el.dataset.days);
     }
@@ -123,7 +123,7 @@
         ${cf ? `<section class="warn"><h3>⚔️ ${esc(cf.name)}</h3><p>${esc(window.Conflict.blocName(w, 'A'))} <b>vs</b> ${esc(window.Conflict.blocName(w, 'B'))}. Day ${Math.floor((w.tick - cf.started) / 24) + 1}, ${cf.clashes} clashes, ${cf.talks} rounds of talks.</p></section>` : ''}
         <section><h3>🏘️ Districts</h3>${districts}</section>
         <section><h3>📊 Numbers</h3><div class="stats"><div><b>${pop.length}</b><small>citizens</small></div><div><b>${w.groups.filter(g => !g.dissolved).length}</b><small>groups</small></div><div><b>${stats.fights}</b><small>fights</small></div><div><b>${stats.jokes}</b><small>jokes told</small></div><div><b>${stats.drinks}</b><small>drinks</small></div><div><b>${stats.joints}</b><small>joints</small></div><div><b>${stats.converts}</b><small>minds changed</small></div><div><b>${stats.forgiven}</b><small>hatchets buried</small></div><div><b>${stats.helped}</b><small>kind acts</small></div><div><b>${w.history.length}</b><small>conflicts</small></div></div></section>
-        <section><h3>⚙️ Controls</h3><p class="muted">Seed: <code>${esc(String(w.seed))}</code>. Progress autosaves to this browser.</p><p><a class="btn" data-act="jump" data-days="1">Skip a day</a> <a class="btn" data-act="jump" data-days="7">Skip a week</a> <a class="btn" data-act="save">Save now</a> <a class="btn danger" data-act="newcity">New city…</a></p></section>`;
+        <section><h3>⚙️ Controls</h3><p class="muted">Seed: <code>${esc(String(w.seed))}</code>. Progress autosaves to this browser.</p><p><a class="btn" data-act="jump" data-days="1">Skip a day</a> <a class="btn" data-act="jump" data-days="7">Skip a week</a> <a class="btn" data-act="save">Save now</a></p><p class="seedrow"><input id="seed-input" type="text" placeholder="Seed for a new city (optional)"> <a class="btn danger" data-act="newcity">Start a new city</a></p><p class="muted"><small>Starting a new city replaces the saved one.</small></p></section>`;
     }
 
     // ---- Chronicle ----
