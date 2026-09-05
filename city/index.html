@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b2430">
+<title>Pebbleton — a living AI city</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header id="top">
+  <div class="brand"><span class="logo">🏙️</span><div><b>Pebbleton</b><small id="clock">Day 1 · 00:00</small></div></div>
+  <div class="controls">
+    <button id="play" title="Play / pause (space)">⏸</button>
+    <button class="spd" data-spd="1" title="Slow">1×</button>
+    <button class="spd on" data-spd="2" title="Normal">2×</button>
+    <button class="spd" data-spd="3" title="Fast">3×</button>
+    <button class="spd" data-spd="4" title="Very fast">4×</button>
+  </div>
+  <div class="status">
+    <span id="phase" class="phase peace">🌤️ Peace</span>
+    <div class="tension" title="City tension"><div id="tension-fill" class="fill"></div></div>
+    <span id="weather">☀️</span>
+  </div>
+</header>
+<main>
+  <section id="mapwrap">
+    <canvas id="map"></canvas>
+    <div id="maphint">tap a person · pinch to zoom · double-tap to reset</div>
+  </section>
+  <div id="headline"></div>
+  <section id="side">
+    <nav id="tabs">
+      <button class="tab on" data-tab="feed">Feed</button>
+      <button class="tab" data-tab="people">People</button>
+      <button class="tab" data-tab="groups">Groups</button>
+      <button class="tab" data-tab="city">City</button>
+      <button class="tab" data-tab="chronicle">Chronicle</button>
+    </nav>
+    <div id="panel">
+      <div class="pane" id="pane-feed">
+        <div class="feed-tools">
+          <button class="lvl" data-lvl="0">Everything</button>
+          <button class="lvl on" data-lvl="1">Notable</button>
+          <button class="lvl" data-lvl="2">Drama</button>
+          <button class="lvl" data-lvl="3">Headlines</button>
+        </div>
+        <div id="follow-bar" hidden></div>
+        <div id="feed"></div>
+      </div>
+      <div class="pane" id="pane-people" hidden>
+        <input id="people-search" type="search" placeholder="Search people, jobs, groups…">
+        <div id="people"></div>
+      </div>
+      <div class="pane" id="pane-groups" hidden><div id="groups"></div></div>
+      <div class="pane" id="pane-city" hidden><div id="city"></div></div>
+      <div class="pane" id="pane-chronicle" hidden><div id="chronicle"></div></div>
+    </div>
+  </section>
+</main>
+<div id="sheet">
+  <div class="sheet-bar"><button id="sheet-back" hidden>‹ back</button><span class="grip"></span><button id="sheet-close">✕</button></div>
+  <div id="sheet-body"></div>
+</div>
+<div id="toast"></div>
+<script src="js/rng.js"></script>
+<script src="js/data.js"></script>
+<script src="js/citizen.js"></script>
+<script src="js/groups.js"></script>
+<script src="js/interactions.js"></script>
+<script src="js/politics.js"></script>
+<script src="js/conflict.js"></script>
+<script src="js/world.js"></script>
+<script src="js/render.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
