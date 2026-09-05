@@ -23,6 +23,7 @@
       document.addEventListener('visibilitychange', () => { if (document.hidden) this.world.save(); });
       window.addEventListener('pagehide', () => this.world.save());
       this.ui.toast(world.tick ? 'Welcome back to Pebbleton.' : 'A new city. Tap anyone to meet them.');
+      setTimeout(() => document.getElementById('maphint').classList.add('fade'), 9000);
     }
     bind() {
       document.getElementById('play').addEventListener('click', () => { this.speedIdx = this.speedIdx === 0 ? (this.prevSpeed || 2) : (this.prevSpeed = this.speedIdx, 0); this.updateSpeedUI(); });
