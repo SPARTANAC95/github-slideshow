@@ -418,7 +418,7 @@ code { font-family: "IBM Plex Mono", monospace; font-size: 0.92em; background: v
     if (custom) {
       list = net.groups.map(function (g) { return { id: g.id, label: g.label, to: 'poke every neuron in ' + g.region, groups: [g.id], rate: 60, duration: 300 }; });
     } else {
-      var to = { sugar: 'Gr64f → SEZ → MN9 proboscis', bitter: 'bitter interneurons inhibit MN9', flashL: 'lamina → medulla → lobula → DN', flashR: 'lamina → medulla → lobula → DN', flash: 'both optic lobes → DN → legs', touch: 'JO → grooming → aDN → legs', pheromone: 'P1 (fru+) → pIP10 → wings' };
+      var to = { sugar: 'Gr64f → SEZ → MN9 proboscis', bitter: 'bitter interneurons inhibit MN9', flashL: 'lamina → medulla → lobula → DN', flashR: 'lamina → medulla → lobula → DN', flash: 'both optic lobes → DN → legs', touch: 'JO → grooming → aDN → legs', pheromone: 'P1 (fru+) → pIP10 → wings', startle: 'GF → wing + leg motor neurons', land: 'inhibits flight DNs, extends legs' };
       list = Object.keys(F.STIMULI).map(function (k) { var s = F.STIMULI[k]; return { id: k, label: s.label, to: to[k], groups: s.groups, rate: s.rate, duration: s.duration }; });
     }
     list.forEach(function (s, n) {

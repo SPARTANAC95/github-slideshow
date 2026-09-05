@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fly Connectome Flight</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #e7e9ec; --panel: #f5f6f7; --panel-2: #eceef1; --ink: #171a1e; --muted: #5b636d;
+  --line: #c7ccd2; --line-soft: #d9dde2; --spike: #f0821c; --spike-glow: rgba(240,130,28,0.55);
+  --olL: #2f7fd6; --olR: #6f5fd8; --cb: #d88f1f; --vnc: #1fa377; --sens: #d4506c; --focus: #2f7fd6; --dot-alpha: 0.42;
+  --shadow: 0 1px 0 rgba(23,26,30,0.06), 0 8px 24px -16px rgba(23,26,30,0.35);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1214; --panel: #171b1f; --panel-2: #1e2428; --ink: #e6e9ec; --muted: #8d97a1;
+    --line: #2b3239; --line-soft: #232a30; --spike: #ffc857; --spike-glow: rgba(255,200,87,0.6);
+    --olL: #5aa0ee; --olR: #9384f0; --cb: #f0ad3f; --vnc: #3ec695; --sens: #ef7590; --focus: #5aa0ee; --dot-alpha: 0.5;
+    --shadow: 0 1px 0 rgba(0,0,0,0.3), 0 10px 30px -18px rgba(0,0,0,0.9);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1214; --panel: #171b1f; --panel-2: #1e2428; --ink: #e6e9ec; --muted: #8d97a1;
+  --line: #2b3239; --line-soft: #232a30; --spike: #ffc857; --spike-glow: rgba(255,200,87,0.6);
+  --olL: #5aa0ee; --olR: #9384f0; --cb: #f0ad3f; --vnc: #3ec695; --sens: #ef7590; --focus: #5aa0ee; --dot-alpha: 0.5;
+  --shadow: 0 1px 0 rgba(0,0,0,0.3), 0 10px 30px -18px rgba(0,0,0,0.9);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif; font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { font-family: "Bricolage Grotesque", "IBM Plex Sans", Arial, sans-serif; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h1 { font-size: clamp(28px, 3.6vw, 40px); font-weight: 700; line-height: 1.05; }
+h2 { font-size: 18px; font-weight: 700; }
+h3 { font-size: 14px; font-weight: 700; }
+p { margin: 0; }
+a { color: inherit; text-decoration-color: var(--line); text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.mono { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+
+.wrap { max-width: 1320px; margin: 0 auto; padding: 22px 22px 48px; display: flex; flex-direction: column; gap: 18px; }
+.masthead { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(260px, 1fr); gap: 20px; align-items: end; border-bottom: 1px solid var(--line); padding-bottom: 16px; }
+.eyebrow { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.lede { max-width: 64ch; margin-top: 8px; color: var(--muted); font-size: 15px; }
+.loop { font-family: "IBM Plex Mono", monospace; font-size: 12px; line-height: 1.6; border: 1px solid var(--line); background: var(--panel); padding: 10px 14px; color: var(--muted); }
+.loop b { color: var(--ink); font-weight: 500; }
+
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+.panel { background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 10px 14px 8px; border-bottom: 1px solid var(--line-soft); }
+.panel-head .sub { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.view { position: relative; background: #0d131c; aspect-ratio: 16 / 10; overflow: hidden; }
+.view canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+.hud { position: absolute; left: 12px; top: 10px; font-family: "IBM Plex Mono", monospace; font-size: 12px; color: #dfe6ee; text-shadow: 0 1px 2px rgba(0,0,0,0.6); pointer-events: none; line-height: 1.5; }
+.hud .st { font-size: 14px; font-weight: 500; color: #ffc857; text-transform: uppercase; letter-spacing: 0.08em; }
+.hint { position: absolute; right: 12px; bottom: 10px; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: rgba(223,230,238,0.75); pointer-events: none; }
+
+.side { display: flex; flex-direction: column; }
+.sec { padding: 12px 14px; border-bottom: 1px solid var(--line-soft); display: flex; flex-direction: column; gap: 8px; }
+.sec:last-child { border-bottom: 0; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { appearance: none; font: inherit; font-size: 13px; font-weight: 500; color: var(--ink); background: var(--panel-2); border: 1px solid var(--line); padding: 7px 12px; cursor: pointer; }
+.btn:hover { border-color: var(--ink); }
+.btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.btn.on { background: var(--spike); border-color: var(--spike); color: #1a1408; }
+.slider { display: grid; grid-template-columns: 1fr auto; gap: 0 10px; align-items: center; font-size: 13px; }
+.slider output { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.slider input { grid-column: 1 / -1; width: 100%; accent-color: var(--spike); margin: 0; }
+.chk { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.chk input { accent-color: var(--spike); margin: 0; }
+
+.rates { display: flex; flex-direction: column; gap: 6px; }
+.rate { display: grid; grid-template-columns: 148px 1fr 46px; gap: 8px; align-items: center; font-size: 12px; }
+.rate .n { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rate .bar { height: 7px; background: var(--panel-2); border: 1px solid var(--line-soft); position: relative; overflow: hidden; }
+.rate .bar i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--c, var(--muted)); transition: width 80ms linear; }
+.rate .v { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; text-align: right; font-variant-numeric: tabular-nums; }
+.rate.arrow { grid-template-columns: 1fr; color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 11px; padding: 2px 0 0 4px; }
+#brain { display: block; width: 100%; height: auto; }
+
+.two { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+canvas.plot { display: block; width: 100%; height: auto; }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px 36px; border-top: 1px solid var(--line); padding-top: 18px; }
+.notes p, .notes li { max-width: 62ch; }
+.notes h2 { margin-bottom: 8px; }
+.notes ul { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+@media (max-width: 960px) { .masthead, .stage, .two { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .btn, .rate .bar i { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <div class="eyebrow">Embodied simulation · complete male <i>Drosophila</i> CNS, scaled</div>
+      <h1>Fly Connectome Flight</h1>
+      <p class="lede">The same spiking network as the <a href="index.html">brain map</a>, now inside a body. The fly's eyes see a lamp in the arena, photoreceptors drive the optic lobes, steering descending neurons bias the wing steering muscles, and the wing motor neurons provide thrust. Nothing tells the fly where to go: it turns toward the light because that is how the circuit is wired.</p>
+    </div>
+    <div class="loop">
+      <b>world</b> → eyes → optic lobes → LC neurons<br>
+      → <b>DNa02 steering DNs</b> → steering motor neurons → yaw<br>
+      → <b>halteres</b> → flight DNs → wing motor neurons → thrust<br>
+      → <b>giant fiber</b> take-off · <b>landing interneurons</b> stop flight
+    </div>
+  </header>
+
+  <section class="stage">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Arena</h2>
+        <span class="sub" id="clock">t = 0.000 s</span>
+      </div>
+      <div class="view">
+        <canvas id="gl"></canvas>
+        <div class="hud">
+          <div class="st" id="hudState">resting</div>
+          <div id="hudLine1">lamp 0.0 units · bearing 0°</div>
+          <div id="hudLine2">speed 0.0 · wingbeat 0 Hz</div>
+        </div>
+        <div class="hint">click the ground to move the lamp · drag to orbit · wheel to zoom</div>
+      </div>
+    </div>
+
+    <div class="panel side">
+      <div class="sec">
+        <h3>Fly</h3>
+        <div class="row">
+          <button class="btn primary" id="btnTakeoff" type="button">Take off</button>
+          <button class="btn" id="btnLand" type="button">Land</button>
+          <button class="btn" id="btnLamp" type="button">Move the lamp</button>
+        </div>
+        <label class="chk"><input type="checkbox" id="chkAuto" checked> Autopilot: take off when the lamp is far, land when it is reached</label>
+        <label class="chk"><input type="checkbox" id="chkFollow" checked> Camera follows the fly</label>
+      </div>
+      <div class="sec">
+        <h3>Brain → body</h3>
+        <div class="rates" id="rates"></div>
+      </div>
+      <div class="sec">
+        <h3>Spikes in the CNS</h3>
+        <canvas id="brain" width="320" height="300" aria-label="Spiking activity on the brain map"></canvas>
+      </div>
+      <div class="sec">
+        <div class="slider">
+          <label for="sSpeed">Speed</label><output id="oSpeed">0.6× real time</output>
+          <input id="sSpeed" type="range" min="2" max="60" step="1" value="20">
+        </div>
+        <div class="slider">
+          <label for="sW">Synaptic strength</label><output id="oW">1.00×</output>
+          <input id="sW" type="range" min="0.25" max="3" step="0.05" value="1">
+        </div>
+        <div class="row">
+          <button class="btn" id="btnRun" type="button">Pause</button>
+          <button class="btn" id="btnRewire" type="button">Rewire (new seed)</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="two">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Sensorimotor raster</h2>
+        <span class="sub">last 2 s · the neurons that fly the fly, sensors at the top, muscles at the bottom</span>
+      </div>
+      <canvas id="raster" class="plot" width="960" height="280" aria-label="Raster of the flight circuit"></canvas>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Network</h2><span class="sub" id="netInfo"></span></div>
+      <div class="sec">
+        <p style="font-size:13px; color: var(--muted)">4,000 leaky integrate-and-fire neurons (1 : 42 of the real 166,700), Shiu et al. parameters, wiring generated from the connectome's region structure plus the pathways listed above. Rewire to get a different random brain with the same circuit design; it should still find the lamp, but not quite the same way.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="notes">
+    <div>
+      <h2>How the fly flies</h2>
+      <p>Take-off is a giant-fiber burst: it drives the wing and leg motor neurons at once, the classic escape jump. Once airborne the halteres beat, and their afferents keep the flight descending neurons active, which keep the wing motor neurons firing. That loop is what sustains flight. The lamp's brightness on each eye becomes a photoreceptor firing rate; through lamina, medulla and lobula it reaches the LC visual projection neurons and then the DNa02-like steering descending neurons, whose left/right difference sets the yaw rate. Landing interneurons inhibit the flight descending neurons and the fly drops onto whatever is under it.</p>
+    </div>
+    <div>
+      <h2>What to try</h2>
+      <ul>
+        <li>Click the ground behind the fly. It has to wander until one eye sees the lamp, then it commits to the turn.</li>
+        <li>Turn synaptic strength down to 0.6×: the steering pathway stops propagating and the fly flies straight.</li>
+        <li>Turn it up to 2×: the whole brain saturates and steering becomes erratic.</li>
+        <li>Press Land mid-flight, then watch the autopilot take off again when the wing motor neurons fall silent.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Sources</h2>
+      <ul>
+        <li><a href="https://research.google/blog/a-connectomics-milestone-mapping-the-complete-male-fruit-fly-brain/">Google Research, 3 Sep 2026: the complete male fruit fly CNS connectome</a></li>
+        <li><a href="https://doi.org/10.1038/s41586-024-07763-9">Shiu et al., Nature 2024: whole-brain leaky integrate-and-fire model</a></li>
+        <li>Steering DNa02, giant fiber and haltere feedback circuits are described in the FlyWire and MANC connectome papers; their sizes here are scaled to the model.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="sim.js"></script>
+<script src="fly.js"></script>
+<script>
+(function () {
+  'use strict';
+  var F = window.FlySim, FlyBody = window.FlyBody;
+  var REGIONS = F.REGIONS;
+  var REGION_TOKEN = { olL: '--olL', cb: '--cb', olR: '--olR', vnc: '--vnc', sens: '--sens' };
+  var $ = function (id) { return document.getElementById(id); };
+
+  // ---------- theme tokens ----------
+  var tok = {};
+  function readTokens() {
+    var cs = getComputedStyle(document.documentElement);
+    ['--bg', '--panel', '--panel-2', '--ink', '--muted', '--line', '--line-soft', '--spike', '--olL', '--cb', '--olR', '--vnc', '--sens', '--dot-alpha'].forEach(function (k) { tok[k] = cs.getPropertyValue(k).trim(); });
+  }
+  readTokens();
+  var mq = window.matchMedia('(prefers-color-scheme: dark)');
+  mq.addEventListener && mq.addEventListener('change', function () { readTokens(); brainDirty = true; });
+  new MutationObserver(function () { readTokens(); brainDirty = true; }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  function regionColor(ri) { return tok[REGION_TOKEN[REGIONS[ri].id]]; }
+  function fmt(n) { return n.toLocaleString('en-US'); }
+
+  // ---------- brain + body ----------
+  var seed = 7, net, body, running = true, stepsPerFrame = 20;
+  var RASTER_GROUPS = [
+    ['photoL', 'eye L', 'sens'], ['photoR', 'eye R', 'sens'], ['lcL', 'LC L', 'cb'], ['lcR', 'LC R', 'cb'],
+    ['DNsteerL', 'DNa02 L', 'cb'], ['DNsteerR', 'DNa02 R', 'cb'], ['GF', 'giant fiber', 'cb'], ['haltere', 'haltere', 'sens'],
+    ['flightDN', 'flight DN', 'cb'], ['landIN', 'landing IN', 'cb'], ['steerMNL', 'steer MN L', 'vnc'], ['steerMNR', 'steer MN R', 'vnc'],
+    ['wingMN', 'wing MN', 'vnc'], ['legMN', 'leg MN', 'vnc']
+  ];
+  var rowOfNeuron; // Int16Array: neuron -> raster row (-1 none)
+  var SPK_CAP = 200000, spkT = new Float32Array(SPK_CAP), spkRow = new Int16Array(SPK_CAP), spkSub = new Float32Array(SPK_CAP), spkHead = 0, spkLen = 0;
+
+  function makeNet(keepBody) {
+    net = new F.Network({ N: 4000, seed: seed, weightScale: +$('sW').value });
+    var old = body;
+    body = new FlyBody(net, { target: old ? old.target : { x: 7, y: 2.6, z: 12 }, autopilot: $('chkAuto').checked });
+    if (old) { body.pos = old.pos; body.yaw = old.yaw; }
+    rowOfNeuron = new Int16Array(net.N).fill(-1);
+    RASTER_GROUPS.forEach(function (rg, row) {
+      var g = net.groupIndex[rg[0]]; if (!g) return;
+      g.members.forEach(function (i, k) { rowOfNeuron[i] = row; subOf[i] = k / g.members.length; });
+    });
+    net.onSpike = function (t, i) {
+      var row = rowOfNeuron[i]; if (row < 0) return;
+      spkT[spkHead] = t; spkRow[spkHead] = row; spkSub[spkHead] = subOf[i];
+      spkHead = (spkHead + 1) % SPK_CAP; if (spkLen < SPK_CAP) spkLen++;
+    };
+    spkHead = 0; spkLen = 0;
+    brainDirty = true;
+    $('netInfo').textContent = fmt(net.N) + ' neurons · ' + fmt(net.E) + ' connections · seed ' + seed;
+    lamp.position.set(body.target.x, body.target.y, body.target.z);
+    updateLampPole();
+  }
+  var subOf = new Float32Array(4000);
+
+  // ---------- three.js scene ----------
+  var glCanvas = $('gl');
+  var renderer = new THREE.WebGLRenderer({ canvas: glCanvas, antialias: true });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  var scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0d131c);
+  scene.fog = new THREE.Fog(0x0d131c, 30, 75);
+  var camera = new THREE.PerspectiveCamera(55, 16 / 10, 0.05, 200);
+
+  scene.add(new THREE.HemisphereLight(0x8fb2d9, 0x1a2230, 0.7));
+  var sun = new THREE.DirectionalLight(0xdfe6ee, 0.55); sun.position.set(-10, 20, -6); scene.add(sun);
+
+  // ground
+  var ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshLambertMaterial({ color: 0x16202b }));
+  ground.rotation.x = -Math.PI / 2; scene.add(ground);
+  var grid = new THREE.GridHelper(60, 30, 0x2c3a4a, 0x22303d); grid.position.y = 0.01; scene.add(grid);
+  var ring = new THREE.Mesh(new THREE.RingGeometry(29.6, 30, 96), new THREE.MeshBasicMaterial({ color: 0x3a4a5c, side: THREE.DoubleSide }));
+  ring.rotation.x = -Math.PI / 2; ring.position.y = 0.02; scene.add(ring);
+
+  // plants: deterministic placement
+  (function () {
+    var prng = 12345;
+    function rnd() { prng = (prng * 1103515245 + 12345) & 0x7fffffff; return prng / 0x7fffffff; }
+    var stem = new THREE.MeshLambertMaterial({ color: 0x2f5a3e });
+    var leaf = new THREE.MeshLambertMaterial({ color: 0x3f7a4e });
+    for (var i = 0; i < 26; i++) {
+      var a = rnd() * Math.PI * 2, d = 6 + rnd() * 22;
+      var h = 0.8 + rnd() * 2.2;
+      var g = new THREE.Group();
+      var s = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.1, h, 6), stem); s.position.y = h / 2; g.add(s);
+      var l = new THREE.Mesh(new THREE.SphereGeometry(0.35 + rnd() * 0.5, 8, 6), leaf); l.position.y = h; l.scale.y = 0.6; g.add(l);
+      g.position.set(Math.cos(a) * d, 0, Math.sin(a) * d);
+      scene.add(g);
+    }
+  })();
+
+  // lamp
+  var lamp = new THREE.Group();
+  var bulb = new THREE.Mesh(new THREE.SphereGeometry(0.35, 20, 14), new THREE.MeshBasicMaterial({ color: 0xffd777 }));
+  lamp.add(bulb);
+  var lampLight = new THREE.PointLight(0xffd377, 1.4, 22, 1.6); lamp.add(lampLight);
+  var glowTex = (function () {
+    var c = document.createElement('canvas'); c.width = c.height = 128;
+    var g = c.getContext('2d'), grd = g.createRadialGradient(64, 64, 4, 64, 64, 64);
+    grd.addColorStop(0, 'rgba(255,215,120,0.85)'); grd.addColorStop(0.35, 'rgba(255,200,90,0.28)'); grd.addColorStop(1, 'rgba(255,200,90,0)');
+    g.fillStyle = grd; g.fillRect(0, 0, 128, 128);
+    return new THREE.CanvasTexture(c);
+  })();
+  var glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false })); glow.scale.set(3.2, 3.2, 1); lamp.add(glow);
+  var pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 1, 6), new THREE.MeshLambertMaterial({ color: 0x55606c }));
+  scene.add(lamp); scene.add(pole);
+  function updateLampPole() {
+    pole.scale.y = lamp.position.y - 0.35;
+    pole.position.set(lamp.position.x, (lamp.position.y - 0.35) / 2, lamp.position.z);
+  }
+
+  // fly
+  var fly = new THREE.Group();
+  var bodyMat = new THREE.MeshLambertMaterial({ color: 0x4b3a2a });
+  var darkMat = new THREE.MeshLambertMaterial({ color: 0x2a2018 });
+  var eyeMat = new THREE.MeshLambertMaterial({ color: 0xb8302c, emissive: 0x3a0a08 });
+  var wingMat = new THREE.MeshBasicMaterial({ color: 0xbfd6ee, transparent: true, opacity: 0.32, side: THREE.DoubleSide, depthWrite: false });
+  var thorax = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 12), bodyMat); thorax.scale.set(1, 0.85, 1.25); fly.add(thorax);
+  var head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 10), bodyMat); head.position.set(0, 0.03, 0.34); fly.add(head);
+  var eL = new THREE.Mesh(new THREE.SphereGeometry(0.095, 12, 10), eyeMat); eL.position.set(0.1, 0.05, 0.39); fly.add(eL);
+  var eR = eL.clone(); eR.position.x = -0.1; fly.add(eR);
+  var abdomen = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 12), bodyMat); abdomen.scale.set(0.9, 0.8, 2.1); abdomen.position.set(0, -0.04, -0.5); fly.add(abdomen);
+  for (var st = 0; st < 4; st++) { var band = new THREE.Mesh(new THREE.TorusGeometry(0.16 - st * 0.015, 0.02, 6, 20), darkMat); band.position.set(0, -0.04, -0.34 - st * 0.14); band.scale.set(1.05, 0.9, 1); fly.add(band); }
+  // antennae
+  for (var an = -1; an <= 1; an += 2) { var ant = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.015, 0.14, 5), darkMat); ant.position.set(an * 0.05, 0.1, 0.44); ant.rotation.x = -0.9; ant.rotation.z = an * 0.5; fly.add(ant); }
+  // legs
+  var legs = [];
+  for (var side = -1; side <= 1; side += 2) {
+    for (var li = 0; li < 3; li++) {
+      var leg = new THREE.Group();
+      var femur = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.022, 0.3, 5), darkMat); femur.position.y = -0.15; leg.add(femur);
+      var tibia = new THREE.Group(); tibia.position.y = -0.3;
+      var tb = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.016, 0.34, 5), darkMat); tb.position.y = -0.17; tibia.add(tb);
+      tibia.rotation.z = side * 1.1;
+      leg.add(tibia);
+      leg.position.set(side * 0.16, -0.08, 0.18 - li * 0.16);
+      leg.rotation.z = -side * 0.9;
+      leg.rotation.x = (li - 1) * 0.5;
+      fly.add(leg); legs.push({ g: leg, side: side, li: li });
+    }
+  }
+  // wings + halteres
+  var wingGeo = new THREE.PlaneGeometry(0.72, 0.26, 1, 1);
+  wingGeo.translate(0.36, 0, 0);
+  var wL = new THREE.Mesh(wingGeo, wingMat); wL.position.set(0.12, 0.16, 0.02); fly.add(wL);
+  var wR = new THREE.Mesh(wingGeo, wingMat); wR.position.set(-0.12, 0.16, 0.02); wR.scale.x = -1; fly.add(wR);
+  var halt = [];
+  for (var hs = -1; hs <= 1; hs += 2) { var hg = new THREE.Group(); var hst = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.16, 4), darkMat); hst.position.x = hs * 0.08; hst.rotation.z = -hs * 1.3; hg.add(hst); var hb = new THREE.Mesh(new THREE.SphereGeometry(0.028, 8, 6), darkMat); hb.position.set(hs * 0.16, 0.03, 0); hg.add(hb); hg.position.set(hs * 0.14, 0.04, -0.16); fly.add(hg); halt.push(hg); }
+  scene.add(fly);
+
+  // path trail
+  var TRAIL = 600, trailPos = new Float32Array(TRAIL * 3), trailN = 0;
+  var trailGeo = new THREE.BufferGeometry(); trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3)); trailGeo.setDrawRange(0, 0);
+  var trail = new THREE.Line(trailGeo, new THREE.LineBasicMaterial({ color: 0xffc857, transparent: true, opacity: 0.55 })); scene.add(trail);
+  var trailAcc = 0;
+  var landMarks = [];
+  var markGeo = new THREE.RingGeometry(0.25, 0.32, 24), markMat = new THREE.MeshBasicMaterial({ color: 0xffc857, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+
+  // camera control
+  var camAz = 0.35, camEl = 0.32, camDist = 4.2, dragging = false, lastMx = 0, lastMy = 0, moved = 0;
+  var camPos = new THREE.Vector3(0, 3, -6), camLook = new THREE.Vector3();
+  glCanvas.addEventListener('mousedown', function (e) { dragging = true; moved = 0; lastMx = e.clientX; lastMy = e.clientY; });
+  window.addEventListener('mousemove', function (e) { if (!dragging) return; var dx = e.clientX - lastMx, dy = e.clientY - lastMy; lastMx = e.clientX; lastMy = e.clientY; moved += Math.abs(dx) + Math.abs(dy); camAz -= dx * 0.006; camEl = Math.max(0.05, Math.min(1.3, camEl + dy * 0.005)); });
+  window.addEventListener('mouseup', function () { dragging = false; });
+  glCanvas.addEventListener('wheel', function (e) { e.preventDefault(); camDist = Math.max(1.6, Math.min(16, camDist * (1 + e.deltaY * 0.0012))); }, { passive: false });
+  var ray = new THREE.Raycaster(), mouse = new THREE.Vector2(), groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  glCanvas.addEventListener('click', function (e) {
+    if (moved > 6) return;
+    var r = glCanvas.getBoundingClientRect();
+    mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(mouse, camera);
+    var hit = new THREE.Vector3();
+    if (ray.ray.intersectPlane(groundPlane, hit)) {
+      var LIM = 27;
+      hit.x = Math.max(-LIM, Math.min(LIM, hit.x)); hit.z = Math.max(-LIM, Math.min(LIM, hit.z));
+      setLamp(hit.x, 1.8 + Math.random() * 1.6, hit.z);
+    }
+  });
+  function setLamp(x, y, z) {
+    body.target = { x: x, y: y, z: z };
+    lamp.position.set(x, y, z); updateLampPole();
+  }
+  function resize() {
+    var r = glCanvas.parentElement.getBoundingClientRect();
+    var w = Math.max(320, Math.floor(r.width)), h = Math.max(200, Math.floor(r.height));
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize);
+
+  // ---------- brain map (mini) ----------
+  var brain = $('brain'), bctx = brain.getContext('2d'), BW = 320, BH = 300;
+  var brainStatic = document.createElement('canvas'), brainDirty = true;
+  function drawBrainStatic() {
+    brainStatic.width = BW; brainStatic.height = BH;
+    var c = brainStatic.getContext('2d');
+    c.fillStyle = tok['--panel']; c.fillRect(0, 0, BW, BH);
+    c.strokeStyle = tok['--line']; c.lineWidth = 1;
+    REGIONS.forEach(function (R) { if (R.id === 'sens') return; c.beginPath(); c.ellipse(R.cx * BW, R.cy * BH, R.rx * BW + 4, R.ry * BH + 4, 0, 0, Math.PI * 2); c.stroke(); });
+    c.globalAlpha = parseFloat(tok['--dot-alpha']) || 0.4;
+    for (var r = 0; r < REGIONS.length; r++) {
+      c.fillStyle = regionColor(r);
+      var s = net.regionStart[r], e = s + net.regionCount[r];
+      for (var i = s; i < e; i++) c.fillRect(net.x[i] * BW - 0.6, net.y[i] * BH - 0.6, 1.2, 1.2);
+    }
+    c.globalAlpha = 1; brainDirty = false;
+  }
+  function drawBrain() {
+    if (brainDirty) drawBrainStatic();
+    bctx.drawImage(brainStatic, 0, 0);
+    var t = net.t, last = net.lastSpike, FADE = 90;
+    bctx.fillStyle = tok['--spike'];
+    for (var i = 0; i < net.N; i++) {
+      var age = t - last[i];
+      if (age < FADE) { var a = 1 - age / FADE; bctx.globalAlpha = a; bctx.beginPath(); bctx.arc(net.x[i] * BW, net.y[i] * BH, 1 + 1.6 * a, 0, 6.2832); bctx.fill(); }
+    }
+    bctx.globalAlpha = 1;
+  }
+
+  // ---------- raster ----------
+  var raster = $('raster'), rctx = raster.getContext('2d'), RW = 960, RH = 280, RWIN = 2000, RLEFT = 92, RTOP = 8;
+  function drawRaster() {
+    rctx.fillStyle = tok['--panel']; rctx.fillRect(0, 0, RW, RH);
+    var rows = RASTER_GROUPS.length, plotW = RW - RLEFT - 10, rowH = (RH - RTOP - 6) / rows, t0 = net.t - RWIN;
+    rctx.font = '500 11px "IBM Plex Mono", monospace'; rctx.textAlign = 'right';
+    for (var r = 0; r < rows; r++) {
+      var y = RTOP + r * rowH;
+      rctx.fillStyle = r % 2 ? tok['--panel-2'] : tok['--panel']; rctx.fillRect(RLEFT, y, plotW, rowH);
+      rctx.fillStyle = tok[REGION_TOKEN[RASTER_GROUPS[r][2]]]; rctx.fillRect(RLEFT - 6, y + 1, 3, rowH - 2);
+      rctx.fillStyle = tok['--muted']; rctx.fillText(RASTER_GROUPS[r][1], RLEFT - 12, y + rowH / 2 + 4);
+    }
+    var k = spkLen, idx = (spkHead - 1 + SPK_CAP) % SPK_CAP, sx = plotW / RWIN;
+    while (k-- > 0) {
+      var st = spkT[idx]; if (st < t0) break;
+      var row = spkRow[idx];
+      rctx.fillStyle = tok[REGION_TOKEN[RASTER_GROUPS[row][2]]];
+      rctx.fillRect(RLEFT + (st - t0) * sx, RTOP + row * rowH + 1 + spkSub[idx] * (rowH - 3), 1.5, 2);
+      idx = (idx - 1 + SPK_CAP) % SPK_CAP;
+    }
+  }
+
+  // ---------- rate meters ----------
+  var METERS = [
+    ['photoL', 'eye L photoreceptors', 'sens', 150], ['photoR', 'eye R photoreceptors', 'sens', 150],
+    ['DNsteerL', 'DNa02 steering L', 'cb', 120], ['DNsteerR', 'DNa02 steering R', 'cb', 120],
+    ['steerMNL', 'steering MN L (yaw)', 'vnc', 120], ['steerMNR', 'steering MN R (yaw)', 'vnc', 120],
+    ['flightDN', 'flight DNs', 'cb', 150], ['wingMN', 'wing MN (thrust)', 'vnc', 150]
+  ];
+  var meterEls = {};
+  METERS.forEach(function (m) {
+    var d = document.createElement('div'); d.className = 'rate';
+    d.innerHTML = '<span class="n">' + m[1] + '</span><span class="bar" style="--c: var(' + REGION_TOKEN[m[2]] + ')"><i></i></span><span class="v">0</span>';
+    $('rates').appendChild(d);
+    meterEls[m[0]] = { bar: d.querySelector('i'), v: d.querySelector('.v'), max: m[3] };
+  });
+  function updateMeters() {
+    METERS.forEach(function (m) {
+      var hz = body.rates[m[0]] || 0, el = meterEls[m[0]];
+      el.bar.style.width = Math.min(100, hz / el.max * 100) + '%';
+      el.v.textContent = hz.toFixed(0) + ' Hz';
+    });
+  }
+
+  // ---------- controls ----------
+  $('btnTakeoff').addEventListener('click', function () { body.takeoff(); if (!running) toggleRun(); });
+  $('btnLand').addEventListener('click', function () { body.land(); body.state = 'landing'; });
+  $('btnLamp').addEventListener('click', function () { var a = Math.random() * Math.PI * 2, d = 8 + Math.random() * 16; setLamp(Math.cos(a) * d, 1.6 + Math.random() * 2, Math.sin(a) * d); });
+  $('chkAuto').addEventListener('change', function () { body.autopilot = this.checked; });
+  function toggleRun() { running = !running; $('btnRun').textContent = running ? 'Pause' : 'Run'; }
+  $('btnRun').addEventListener('click', toggleRun);
+  $('btnRewire').addEventListener('click', function () { seed = (seed * 7919 + 13) % 100000 + 1; makeNet(); });
+  $('sSpeed').addEventListener('input', function () { stepsPerFrame = +this.value; $('oSpeed').textContent = (this.value * 0.5 * 60 / 1000).toFixed(2).replace(/\.?0+$/, '') + '× real time'; });
+  $('sW').addEventListener('input', function () { net.weightScale = +this.value; $('oW').textContent = (+this.value).toFixed(2) + '×'; });
+  document.addEventListener('keydown', function (e) {
+    if (e.target && /input|textarea|select/i.test(e.target.tagName)) return;
+    if (e.key === ' ') { e.preventDefault(); toggleRun(); }
+    if (e.key === 't') body.takeoff();
+    if (e.key === 'l') { body.land(); body.state = 'landing'; }
+  });
+
+  // ---------- main loop ----------
+  var frames = 0, lastReal = performance.now();
+  var tmpF = new THREE.Vector3(), tmpUp = new THREE.Vector3(0, 1, 0);
+  function frame(now) {
+    var realDt = Math.min(0.05, (now - lastReal) / 1000); lastReal = now;
+    if (running) {
+      var elapsed = body.tick(stepsPerFrame);
+      trailAcc += elapsed;
+      if (body.airborne && trailAcc > 40) {
+        trailAcc = 0;
+        if (trailN < TRAIL) { trailPos[trailN * 3] = body.pos.x; trailPos[trailN * 3 + 1] = body.pos.y; trailPos[trailN * 3 + 2] = body.pos.z; trailN++; }
+        else { trailPos.copyWithin(0, 3); trailPos[(TRAIL - 1) * 3] = body.pos.x; trailPos[(TRAIL - 1) * 3 + 1] = body.pos.y; trailPos[(TRAIL - 1) * 3 + 2] = body.pos.z; }
+        trailGeo.setDrawRange(0, trailN); trailGeo.attributes.position.needsUpdate = true;
+      }
+      while (landMarks.length < body.landingsAt.length) {
+        var L = body.landingsAt[landMarks.length];
+        var mk = new THREE.Mesh(markGeo, markMat); mk.rotation.x = -Math.PI / 2; mk.position.set(L.x, Math.max(0.03, L.y - 0.3), L.z); scene.add(mk); landMarks.push(mk);
+        if (landMarks.length > 12) scene.remove(landMarks.shift());
+      }
+    }
+    // pose
+    fly.position.set(body.pos.x, body.pos.y, body.pos.z);
+    fly.rotation.set(0, 0, 0);
+    fly.rotateY(body.yaw); fly.rotateX(-body.pitch); fly.rotateZ(body.roll);
+    var amp = body.airborne ? Math.min(1.2, 0.35 + body.rates.wingMN / 100) : 0.05;
+    var beat = Math.sin(now * 0.06) * amp; // visual beat, not the real 200 Hz
+    var steer = (body.rates.steerMNL - body.rates.steerMNR) * 0.004;
+    wL.rotation.z = beat + 0.25 + steer; wL.rotation.y = body.airborne ? 0.15 : 1.35;
+    wR.rotation.z = -(beat + 0.25 - steer); wR.rotation.y = body.airborne ? -0.15 : -1.35;
+    halt[0].rotation.x = halt[1].rotation.x = body.airborne ? Math.sin(now * 0.06 + Math.PI) * 0.6 : 0;
+    var tuck = body.airborne ? 1 : 0;
+    legs.forEach(function (lg) { lg.g.rotation.z = -lg.side * (0.9 - 0.7 * tuck); lg.g.rotation.x = (lg.li - 1) * 0.5 - 0.6 * tuck; });
+    // camera
+    if ($('chkFollow').checked) {
+      var az = body.yaw + Math.PI + camAz;
+      camPos.lerp(new THREE.Vector3(body.pos.x + Math.sin(az) * Math.cos(camEl) * camDist, body.pos.y + Math.sin(camEl) * camDist, body.pos.z + Math.cos(az) * Math.cos(camEl) * camDist), Math.min(1, realDt * 4));
+      camLook.lerp(new THREE.Vector3(body.pos.x, body.pos.y + 0.1, body.pos.z), Math.min(1, realDt * 8));
+    } else {
+      camPos.lerp(new THREE.Vector3(Math.sin(camAz) * 34, 14 + camEl * 10, Math.cos(camAz) * 34), Math.min(1, realDt * 3));
+      camLook.lerp(new THREE.Vector3(0, 0, 0), Math.min(1, realDt * 3));
+    }
+    camera.position.copy(camPos); camera.lookAt(camLook);
+    bulb.scale.setScalar(1 + Math.sin(now * 0.003) * 0.04);
+    renderer.render(scene, camera);
+
+    // panels
+    if (frames % 2 === 0) { drawBrain(); drawRaster(); updateMeters(); }
+    $('hudState').textContent = body.state;
+    $('hudLine1').textContent = 'lamp ' + body.distance.toFixed(1) + ' units · bearing ' + (body.bearing * 57.3).toFixed(0) + '° · eyes L ' + (body.eyeL * 100).toFixed(0) + '% R ' + (body.eyeR * 100).toFixed(0) + '%';
+    $('hudLine2').textContent = 'speed ' + body.speed.toFixed(1) + ' u/s · wing MN ' + body.rates.wingMN.toFixed(0) + ' Hz · steer L−R ' + (body.rates.steerMNL - body.rates.steerMNR).toFixed(0) + ' Hz';
+    $('clock').textContent = 't = ' + (net.t / 1000).toFixed(3) + ' s';
+    frames++;
+    requestAnimationFrame(frame);
+  }
+
+  makeNet();
+  resize();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

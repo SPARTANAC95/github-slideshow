@@ -93,7 +93,16 @@
     { id: 'pher', label: 'Pheromone sensors (Gr32a / Or67d)', region: 'sens', n: 30, cx: 0.30, cy: 0.16, r: 0.03, sign: 1 },
     { id: 'P1', label: 'P1 courtship neurons (fruitless+, male-specific)', region: 'cb', n: 25, cx: 0.59, cy: 0.23, r: 0.025, sign: 1 },
     { id: 'pIP10', label: 'pIP10 descending song neurons (fru+)', region: 'cb', n: 6, cx: 0.56, cy: 0.36, r: 0.012, sign: 1 },
-    { id: 'wingMN', label: 'Wing motor neurons (VNC)', region: 'vnc', n: 40, cx: 0.50, cy: 0.60, r: 0.04, sign: 1 }
+    { id: 'wingMN', label: 'Wing motor neurons (VNC)', region: 'vnc', n: 40, cx: 0.50, cy: 0.60, r: 0.04, sign: 1 },
+    // flight
+    { id: 'haltere', label: 'Haltere afferents (wingbeat feedback)', region: 'sens', n: 40, cx: 0.66, cy: 0.66, r: 0.03, sign: 1 },
+    { id: 'flightDN', label: 'Flight-maintaining descending neurons', region: 'cb', n: 20, cx: 0.53, cy: 0.335, r: 0.02, sign: 1 },
+    { id: 'GF', label: 'Giant fiber (take-off / escape)', region: 'cb', n: 4, cx: 0.50, cy: 0.395, r: 0.008, sign: 1 },
+    { id: 'DNsteerL', label: 'Steering descending neurons (DNa02, left)', region: 'cb', n: 12, cx: 0.40, cy: 0.345, r: 0.018, sign: 1 },
+    { id: 'DNsteerR', label: 'Steering descending neurons (DNa02, right)', region: 'cb', n: 12, cx: 0.60, cy: 0.345, r: 0.018, sign: 1 },
+    { id: 'steerMNL', label: 'Wing steering motor neurons (left)', region: 'vnc', n: 20, cx: 0.44, cy: 0.63, r: 0.025, sign: 1 },
+    { id: 'steerMNR', label: 'Wing steering motor neurons (right)', region: 'vnc', n: 20, cx: 0.56, cy: 0.63, r: 0.025, sign: 1 },
+    { id: 'landIN', label: 'Landing interneurons (inhibit flight)', region: 'cb', n: 20, cx: 0.47, cy: 0.33, r: 0.02, sign: -1 }
   ];
 
   // Feed-forward pathway wiring: [pre, post, connection prob, min syn, max syn]
@@ -105,15 +114,15 @@
     ['bitterIN', 'feedIN', 0.50, 6, 14],
     ['bitterIN', 'MN9', 0.30, 4, 10],
 
-    ['photoL', 'lamL', 0.25, 6, 12],
-    ['lamL', 'medL', 0.20, 4, 10],
-    ['medL', 'lobL', 0.15, 4, 10],
-    ['lobL', 'lcL', 0.25, 4, 10],
+    ['photoL', 'lamL', 0.35, 6, 12],
+    ['lamL', 'medL', 0.30, 4, 10],
+    ['medL', 'lobL', 0.20, 4, 10],
+    ['lobL', 'lcL', 0.35, 4, 10],
     ['lcL', 'DNvis', 0.30, 4, 10],
-    ['photoR', 'lamR', 0.25, 6, 12],
-    ['lamR', 'medR', 0.20, 4, 10],
-    ['medR', 'lobR', 0.15, 4, 10],
-    ['lobR', 'lcR', 0.25, 4, 10],
+    ['photoR', 'lamR', 0.35, 6, 12],
+    ['lamR', 'medR', 0.30, 4, 10],
+    ['medR', 'lobR', 0.20, 4, 10],
+    ['lobR', 'lcR', 0.35, 4, 10],
     ['lcR', 'DNvis', 0.30, 4, 10],
     ['DNvis', 'legMN', 0.40, 6, 12],
 
@@ -124,7 +133,19 @@
     ['pher', 'P1', 0.45, 8, 16],
     ['P1', 'P1', 0.15, 2, 6],
     ['P1', 'pIP10', 0.70, 10, 18],
-    ['pIP10', 'wingMN', 0.75, 10, 18]
+    ['pIP10', 'wingMN', 0.75, 10, 18],
+
+    ['haltere', 'flightDN', 0.50, 8, 14],
+    ['flightDN', 'flightDN', 0.10, 2, 5],
+    ['flightDN', 'wingMN', 0.70, 10, 16],
+    ['GF', 'wingMN', 0.90, 10, 18],
+    ['GF', 'legMN', 0.70, 10, 18],
+    ['lcL', 'DNsteerL', 0.50, 6, 12],
+    ['lcR', 'DNsteerR', 0.50, 6, 12],
+    ['DNsteerL', 'steerMNL', 0.80, 10, 16],
+    ['DNsteerR', 'steerMNR', 0.80, 10, 16],
+    ['landIN', 'flightDN', 0.90, 12, 18],
+    ['landIN', 'wingMN', 0.70, 10, 16]
   ];
 
   // Stimuli the UI can trigger. rate in Hz, duration in ms.
@@ -135,7 +156,9 @@
     flashR: { label: 'Light flash, right eye', groups: ['photoR'], rate: 150, duration: 250 },
     flash: { label: 'Light flash, both eyes', groups: ['photoL', 'photoR'], rate: 150, duration: 250 },
     touch: { label: 'Touch the antenna', groups: ['touch'], rate: 120, duration: 400 },
-    pheromone: { label: 'Female pheromone', groups: ['pher'], rate: 100, duration: 700 }
+    pheromone: { label: 'Female pheromone', groups: ['pher'], rate: 100, duration: 700 },
+    startle: { label: 'Startle (giant fiber)', groups: ['GF'], rate: 250, duration: 80 },
+    land: { label: 'Land', groups: ['landIN', 'legMN'], rate: 120, duration: 400 }
   };
 
   // Motor read-outs shown as meters.
@@ -332,13 +355,21 @@
     this.t = 0;
     this.spikeCount = 0;
     this.stims = [];        // active stimuli: {members, rate, until}
+    this.drives = {};       // persistent drives: id -> {members, rate}
     this.onSpike = null;    // callback(t, id)
+    this.groupSpikes = new Int32Array(this.groups.length); // cumulative spikes per named group
     // per-region spike counters for the current step
     this.stepCounts = new Int32Array(REGIONS.length);
   };
 
   Network.prototype.stimulate = function (members, rateHz, durationMs) {
     this.stims.push({ members: members, rate: rateHz, until: this.t + durationMs });
+  };
+
+  // Persistent Poisson drive on a set of neurons (rate 0 removes it).
+  Network.prototype.setDrive = function (id, members, rateHz) {
+    if (!rateHz || rateHz <= 0) { delete this.drives[id]; return; }
+    this.drives[id] = { members: members, rate: rateHz };
   };
 
   Network.prototype.trigger = function (stimId) {
@@ -380,14 +411,21 @@
       for (var k = 0; k < m.length; k++) if (rand() < p) v[m[k]] = V_TH + 0.01;
     }
     this.stims = live;
+    for (var key in this.drives) {
+      var dr = this.drives[key];
+      var pd = dr.rate * dt / 1000, dm = dr.members;
+      for (var q = 0; q < dm.length; q++) if (rand() < pd) v[dm[q]] = V_TH + 0.01;
+    }
 
     // spikes + propagation
+    var grp = this.group, gcount = this.groupSpikes;
     var nsp = 0;
     var onSpike = this.onSpike;
     for (i = 0; i < N; i++) {
       if (v[i] >= V_TH && refr[i] <= 0) {
         v[i] = V_RESET; refr[i] = T_REF; last[i] = t; nsp++;
         counts[this.region[i]]++;
+        if (grp[i] >= 0) gcount[grp[i]]++;
         if (onSpike) onSpike(t, i);
         var end = rowPtr[i + 1];
         for (e = rowPtr[i]; e < end; e++) g[col[e]] += w[e] * ws;
